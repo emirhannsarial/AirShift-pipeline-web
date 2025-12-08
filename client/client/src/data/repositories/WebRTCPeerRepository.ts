@@ -78,9 +78,13 @@ export class WebRTCPeerRepository implements IPeerRepository {
     }
 
     sendData(data: ArrayBuffer | string): void {
-        if (this.peer) {
-            this.peer.send(data);
-        }
+            if (this.peer && this.peer.connected) {
+                // Log ekleyelim ki gönderip göndermediğini görelim
+                console.log("PeerRepo: Veri gönderiliyor...", typeof data === 'string' ? 'Metin' : 'Binary');
+                this.peer.send(data);
+            } else {
+                console.warn("PeerRepo: Bağlantı yok, veri gönderilemedi!");
+            }
     }
 
     getBufferedAmount(): number {

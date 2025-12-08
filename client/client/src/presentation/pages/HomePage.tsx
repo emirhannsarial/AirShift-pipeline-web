@@ -90,24 +90,35 @@ export const HomePage = () => {
                 </>
               )}
 
-              {/* İlerleme Çubuğu */}
-              {isConnected && (
-                <div style={{ marginTop: '30px', textAlign: 'left' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: 'bold' }}>
-                    <span>{progress === 100 ? 'Completed' : 'Sending...'}</span>
-                    <span>%{progress}</span>
-                  </div>
-                  <div className="progress-container">
-                    <div className="progress-bar" style={{ width: `${progress}%` }}></div>
-                  </div>
-                  {progress === 100 && (
-                    <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                       <h3 style={{ color: '#2ecc71' }}>✅ Transfer Successful!</h3>
-                       <button onClick={() => window.location.reload()} style={{ marginTop: '10px', background: '#333' }}>Send Another File</button>
-                    </div>
-                  )}
+              {/* İlerleme Çubuğu ve Durum Bilgisi */}
+          {isConnected && (
+            <div style={{ marginTop: '30px', textAlign: 'left' }}>
+              
+              {/* DURUM MESAJLARI */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: 'bold' }}>
+                <span>
+                  {/* Duruma göre doğru mesajı göster */}
+                  {progress === 100 ? 'Transfer Completed' : 
+                   progress > 0 ? 'Sending...' : 
+                   'Waiting for receiver to accept...'}
+                </span>
+                <span>%{progress}</span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="progress-container">
+                <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+              </div>
+
+              {progress === 100 && (
+                <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                   <h3 style={{ color: '#2ecc71' }}>✅ Transfer Successful!</h3>
+                   <button onClick={() => window.location.reload()} style={{ marginTop: '10px', background: '#333' }}>Send Another File</button>
                 </div>
               )}
+            </div>
+          )}
+              
             </div>
           )}
         </div>

@@ -1,109 +1,159 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react'; 
 import { useParams } from 'react-router-dom';
 import { useTransferStore } from '../store/useTransferStore';
+import { AlertModal } from '../components/AlertModal';
 
 export const DownloadPage = () => {
   const { roomId } = useParams();
-  const { joinRoom, connectionStatus, logs } = useTransferStore();
+  const { joinRoom, connectionStatus, incomingMetadata, acceptDownload, rejectDownload, progress, transferState, senderLeft, logs } = useTransferStore();
   const hasJoined = useRef(false);
-  
-  // YENİ: Timeout State
-  const [isTimedOut, setIsTimedOut] = useState(false);
-  
-  const isDownloading = logs.some(l => l.includes('Downloading') || l.includes('İndirme'));
-  const isFinished = logs.some(l => l.includes('COMPLETED') || l.includes('KAYDEDİLDİ'));
+  const [showLogs, setShowLogs] = useState(false); // YENİ: Logları açıp kapamak için
+  // Connection durumunu burada kullanıyoruz (Hatayı gidermek için)
   const isConnected = connectionStatus.includes('CONNECTED') || connectionStatus.includes('BAĞLANDI');
 
   useEffect(() => {
     if (roomId && !hasJoined.current) {
       hasJoined.current = true;
       joinRoom(roomId);
-
-      // YENİ: 15 Saniye Sayaç
-      const timer = setTimeout(() => {
-        const currentStatus = useTransferStore.getState().connectionStatus;
-        if (!currentStatus.includes('CONNECTED') && !currentStatus.includes('BAĞLANDI')) {
-          setIsTimedOut(true);
-        }
-      }, 15000); 
-
-      return () => clearTimeout(timer);
+      window.onbeforeunload = () => "Transfer will stop. Are you sure?";
     }
+    return () => { window.onbeforeunload = null; };
   }, [roomId, joinRoom]);
 
   return (
     <div className="container">
       <div className="main-layout">
-        
-        {/* SOL REKLAM */}
-        <div className="ad-sidebar">📢 Ad Space (160x600)</div>
+        <div className="ad-sidebar">📢 Ad Space</div>
 
-        {/* ORTA İÇERİK */}
         <div className="content-area">
+          
+          {/* DURUM 1: SENDER KAÇTI MODALI */}
+          {senderLeft && (
+            <AlertModal 
+              title="Sender Disconnected" 
+              message="The sender closed the page. Transfer cannot continue."
+              actionText="Go Home"
+              onAction={() => window.location.href = '/'}
+            />
+          )}
+
           <div className="card" style={{ padding: '40px 20px' }}>
             
-            {/* İkonlar */}
-            <div style={{ fontSize: '80px', marginBottom: '30px' }}>
-              {!isConnected && !isTimedOut && '⏳'}
-              {isTimedOut && '⚠️'}
-              {isConnected && !isDownloading && !isFinished && '🔗'}
-              {isDownloading && !isFinished && '⬇️'}
-              {isFinished && '🎉'}
-            </div>
-
-            {/* Durum: Timeout Hatası */}
-            {isTimedOut && !isConnected && (
+            {/* DURUM 2: DOSYA GELDİ - ONAY BEKLİYOR */}
+            {incomingMetadata && transferState !== 'TRANSFERRING' && transferState !== 'COMPLETED' && (
               <div>
-                <h2 style={{ color: '#e74c3c' }}>Connection Timeout</h2>
-                <p style={{ color: '#aaa' }}>Sender not found or offline.</p>
-                <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '10px' }}>
-                  Please ensure the sender still has the page open.
-                </p>
-                <button onClick={() => window.location.reload()} style={{ marginTop: '20px', background: '#333' }}>Retry</button>
+                <div style={{ fontSize: '60px', marginBottom: '20px' }}>📁</div>
+                <h3>File Ready!</h3>
+                <p style={{ fontSize: '1.2rem', color: '#fff', margin: '10px 0' }}>{incomingMetadata.name}</p>
+                <p style={{ color: '#888' }}>{(incomingMetadata.size / 1024 / 1024).toFixed(2)} MB</p>
+                
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '30px' }}>
+                  <button onClick={rejectDownload} style={{ background: '#333' }}>Reject</button>
+                  <button onClick={acceptDownload} style={{ background: '#2ecc71' }}>Download</button>
+                </div>
               </div>
             )}
 
-            {/* Durum: Bağlanıyor */}
-            {!isConnected && !isTimedOut && (
+            {/* DURUM 3: İNDİRİLİYOR */}
+            {transferState === 'TRANSFERRING' && (
+              <div>
+                <h2 style={{ color: '#646cff' }}>Downloading...</h2>
+                <div className="progress-container" style={{ margin: '20px 0' }}>
+                    <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+                </div>
+                <p>{progress}%</p>
+                <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '10px' }}>Please keep this tab open.</p>
+              </div>
+            )}
+
+            {/* DURUM 4: BEKLİYOR */}
+            {!incomingMetadata && transferState === 'IDLE' && !senderLeft && (
                 <div>
-                    <h2>Connecting to Peer...</h2>
-                    <p style={{ color: '#666' }}>Establishing secure P2P tunnel.</p>
+                    <div style={{ fontSize: '60px', marginBottom: '20px' }}>
+                        {isConnected ? '🔗' : '⏳'}
+                    </div>
+                    {isConnected ? (
+                        <>
+                            <h2>Connected!</h2>
+                            <p>Waiting for sender to select a file...</p>
+                        </>
+                    ) : (
+                        <>
+                            <h2>Connecting...</h2>
+                            <p style={{ color: '#666' }}>Establishing secure P2P tunnel.</p>
+                        </>
+                    )}
                 </div>
             )}
-            
-            {/* Durum: Bağlandı */}
-            {isConnected && !isDownloading && !isFinished && (
-              <div>
-                <h2 style={{ color: '#2ecc71' }}>Connected!</h2>
-                <p>Waiting for sender to select the file...</p>
-                <div className="loader" style={{ marginTop: '20px', color: '#666' }}>Ready to receive</div>
-              </div>
+
+            {/* DURUM 5: BİTTİ */}
+            {transferState === 'COMPLETED' && (
+               <div>
+                 <h2 style={{ color: '#2ecc71' }}>Saved! 🎉</h2>
+                 <p>File saved to your device.</p>
+                 <button onClick={() => window.location.reload()} style={{ marginTop: '20px' }}>Receive Another</button>
+               </div>
             )}
 
-            {/* Durum: İniyor */}
-            {isDownloading && !isFinished && (
-              <div>
-                <h2 style={{ color: '#646cff' }}>Downloading File...</h2>
-                <p style={{ color: '#aaa', marginTop: '10px' }}>Check your browser's download manager.</p>
-                <p style={{ fontSize: '0.8rem', color: '#666' }}>Do not close this tab.</p>
-              </div>
-            )}
+            {/* MODERN LOG & DETAILS SECTION */}
+            <div style={{ marginTop: '40px', borderTop: '1px solid #333', paddingTop: '20px' }}>
+                <button 
+                    onClick={() => setShowLogs(!showLogs)}
+                    style={{ 
+                        background: 'transparent', 
+                        border: 'none', 
+                        color: '#666', 
+                        fontSize: '0.9rem', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        margin: '0 auto'
+                    }}
+                >
+                    {showLogs ? 'Hide Activity' : 'Show Activity'} 
+                    <span style={{ fontSize: '0.8rem' }}>{showLogs ? '▲' : '▼'}</span>
+                </button>
 
-            {/* Durum: Bitti */}
-            {isFinished && (
-              <div>
-                <h2 style={{ color: '#2ecc71' }}>Transfer Completed!</h2>
-                <p>File saved to downloads folder.</p>
-                <button onClick={() => window.location.href = '/'} style={{ marginTop: '20px' }}>Send a File</button>
-              </div>
-            )}
+                {showLogs && (
+                    <div style={{ 
+                        marginTop: '15px', 
+                        textAlign: 'left', 
+                        background: '#1a1a1a', 
+                        borderRadius: '12px', 
+                        padding: '15px',
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        fontSize: '0.85rem',
+                        boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)'
+                    }}>
+                        {logs.length === 0 && <p style={{color:'#444', textAlign:'center'}}>No activity yet...</p>}
+                        
+                        {logs.map((log, i) => (
+                            <div key={i} style={{ 
+                                display: 'flex', 
+                                gap: '10px', 
+                                marginBottom: '8px', 
+                                borderBottom: '1px solid #222', 
+                                paddingBottom: '5px' 
+                            }}>
+                                <span style={{ color: '#666' }}>{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                <span style={{ 
+                                    color: log.includes('Error') ? '#e74c3c' : 
+                                           log.includes('success') ? '#2ecc71' : '#ccc' 
+                                }}>
+                                    {log.replace('>', '').trim()}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
           </div>
         </div>
 
-        {/* SAĞ REKLAM */}
-        <div className="ad-sidebar">📢 Ad Space (160x600)</div>
-
+        <div className="ad-sidebar">📢 Ad Space</div>
       </div>
     </div>
   );
