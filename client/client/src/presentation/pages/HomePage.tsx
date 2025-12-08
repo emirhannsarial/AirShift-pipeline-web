@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTransferStore } from '../store/useTransferStore';
 
 export const HomePage = () => {
-  const { createRoom, roomId, connectionStatus, progress, selectedFile, selectFile } = useTransferStore();
+  const { createRoom, roomId, connectionStatus, progress, selectedFile, selectFile, transferState, resetTransfer } = useTransferStore();
   const [showToast, setShowToast] = useState(false);
   
   const shareLink = roomId ? `${window.location.origin}/download/${roomId}` : '';
@@ -90,27 +90,40 @@ export const HomePage = () => {
                 </>
               )}
 
-              {/* İlerleme Çubuğu ve Durum Bilgisi */}
+              {/* İlerleme ve Durum */}
           {isConnected && (
             <div style={{ marginTop: '30px', textAlign: 'left' }}>
               
-              {/* DURUM MESAJLARI */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: 'bold' }}>
-                <span>
-                  {/* Duruma göre doğru mesajı göster */}
-                  {progress === 100 ? 'Transfer Completed' : 
-                   progress > 0 ? 'Sending...' : 
-                   'Waiting for receiver to accept...'}
-                </span>
-                <span>%{progress}</span>
-              </div>
+              {/* DURUM: REDDEDİLDİ */}
+              {transferState === 'REJECTED' && (
+                <div style={{ textAlign: 'center', color: '#e74c3c' }}>
+                  <h3>❌ Receiver Rejected the File</h3>
+                  <p>They chose not to download {selectedFile?.name}.</p>
+                  <button onClick={resetTransfer} style={{ marginTop: '15px', background: '#333' }}>
+                    Try Again
+                  </button>
+                </div>
+              )}
 
-              {/* Progress Bar */}
-              <div className="progress-container">
-                <div className="progress-bar" style={{ width: `${progress}%` }}></div>
-              </div>
+              {/* DURUM: NORMAL TRANSFER */}
+              {transferState !== 'REJECTED' && (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: 'bold' }}>
+                    <span>
+                      {transferState === 'COMPLETED' ? 'Completed' : 
+                       transferState === 'TRANSFERRING' ? 'Sending...' : 
+                       'Waiting for receiver to accept...'}
+                    </span>
+                    <span>%{progress}</span>
+                  </div>
+                  <div className="progress-container">
+                    <div className="progress-bar" style={{ width: `${progress}%`, background: transferState === 'ERROR' ? '#e74c3c' : '#28a745' }}></div>
+                  </div>
+                </>
+              )}
 
-              {progress === 100 && (
+              {/* DURUM: TAMAMLANDI */}
+              {transferState === 'COMPLETED' && (
                 <div style={{ textAlign: 'center', marginTop: '20px' }}>
                    <h3 style={{ color: '#2ecc71' }}>✅ Transfer Successful!</h3>
                    <button onClick={() => window.location.reload()} style={{ marginTop: '10px', background: '#333' }}>Send Another File</button>

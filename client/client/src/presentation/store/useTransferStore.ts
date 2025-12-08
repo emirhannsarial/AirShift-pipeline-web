@@ -6,7 +6,6 @@ import { ReceiveFileUseCase } from '../../core/domain/usecases/ReceiveFileUseCas
 import type { FileMetadata } from '../../core/domain/entities/FileMetadata';
 import { io } from 'socket.io-client';
 
-// Environment variable yoksa localhost'a düş
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 const socket = io(SERVER_URL);
 const signalingRepo = new SocketSignalingRepository(socket);
@@ -22,7 +21,8 @@ interface TransferState {
     progress: number;
     selectedFile: File | null;
     incomingMetadata: FileMetadata | null;
-    transferState: 'IDLE' | 'WAITING_ACCEPT' | 'TRANSFERRING' | 'COMPLETED' | 'ERROR';
+    // YENİ: 'REJECTED' durumunu ekledik
+    transferState: 'IDLE' | 'WAITING_ACCEPT' | 'TRANSFERRING' | 'COMPLETED' | 'ERROR' | 'REJECTED';
     senderLeft: boolean;
     
     // Actions
@@ -33,7 +33,7 @@ interface TransferState {
     
     acceptDownload: () => void; 
     rejectDownload: () => void;
-    reset: () => void;
+    resetTransfer: () => void; // YENİ: Durumu sıfırlama butonu için
 }
 
 type GetState = () => TransferState;
@@ -52,7 +52,15 @@ export const useTransferStore = create<TransferState>((set, get) => ({
 
     addLog: (msg) => set((state) => ({ logs: [...state.logs, msg] })),
 
-    reset: () => set({ progress: 0, transferState: 'IDLE', incomingMetadata: null, selectedFile: null }),
+    // YENİ: İşlem bittikten veya reddedildikten sonra başa dönmek için
+    resetTransfer: () => {
+        set({ 
+            transferState: 'IDLE', 
+            progress: 0, 
+            incomingMetadata: null,
+            // Dosyayı silmiyoruz ki gönderici tekrar aynı dosyayı yollayabilsin
+        });
+    },
 
     selectFile: (file: File) => {
         set({ selectedFile: file, transferState: 'IDLE', progress: 0 });
@@ -66,7 +74,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
         if (!meta) return;
 
         try {
-            await receiveFileUseCase.startDownload(meta); 
+            await receiveFileUseCase.startDownload(meta); // Artık bu fonksiyon var!
             set({ transferState: 'TRANSFERRING' });
             peerRepo.sendData(JSON.stringify({ type: 'STATUS', status: 'DOWNLOAD_STARTED' }));
         } catch (error) { 
@@ -75,7 +83,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
     },
 
     rejectDownload: () => {
-        set({ incomingMetadata: null, transferState: 'IDLE' });
+        set({ incomingMetadata: null, transferState: 'IDLE' }); // Alıcı başa döner
         peerRepo.sendData(JSON.stringify({ type: 'STATUS', status: 'DOWNLOAD_REJECTED' }));
     },
 
@@ -100,8 +108,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
     },
 
     joinRoom: async (roomId) => {
-        // Emin olmak için selectedFile'ı null yapalım
-        set({ roomId, connectionStatus: 'Connecting...', selectedFile: null }); 
+        set({ roomId, connectionStatus: 'Connecting...' });
         await signalingRepo.joinRoom(roomId);
         
         peerRepo.initialize(false);
@@ -118,7 +125,6 @@ export const useTransferStore = create<TransferState>((set, get) => ({
     }
 }));
 
-// Helper Fonksiyon
 function sendMetadata(file: File) {
     const metadata = {
         id: crypto.randomUUID(),
@@ -126,10 +132,6 @@ function sendMetadata(file: File) {
         size: file.size,
         type: file.type
     };
-    
-    // YENİ: Log ekleyelim ki gönderdiğini görelim
-    useTransferStore.getState().addLog(`Metadata sending for: ${file.name}`);
-    
     useTransferStore.setState({ transferState: 'WAITING_ACCEPT' }); 
     peerRepo.sendData(JSON.stringify({ type: 'METADATA', payload: metadata }));
 }
@@ -156,66 +158,64 @@ function bindPeerEvents(targetId: string, get: GetState, set: SetState) {
     });
 
     peerRepo.onConnect(() => {
-        get().addLog("✅ CONNECTED (P2P)");
         set({ connectionStatus: 'CONNECTED (P2P)', senderLeft: false });
-
-        // YENİ STRATEJİ:
-        // Eğer biz ALICIYSAK (Dosya seçili değilse), karşıya "Ben Hazırım" mesajı atalım.
         if (!get().selectedFile) {
-            console.log("Alıcıyım, 'HELLO' gönderiyorum...");
             peerRepo.sendData(JSON.stringify({ type: 'HELLO' }));
         }
     });
     
     peerRepo.onData((data: string | ArrayBuffer | Uint8Array) => {
-        const arrayBuffer = data instanceof Uint8Array ? data.buffer : data;
-        let isMetadata = false;
+        const bufferData = (typeof data === 'string') 
+            ? new TextEncoder().encode(data) 
+            : (data instanceof Uint8Array ? data : new Uint8Array(data));
 
-        if (typeof data === 'string') {
-            try {
-                const msg = JSON.parse(data);
-                
-                // 1. HELLO MESAJI GELDİ Mİ? (Gönderici bunu bekler)
+        let isCommand = false;
+
+        try {
+            const textDecoder = new TextDecoder();
+            const textString = textDecoder.decode(bufferData);
+
+            if (textString.trim().startsWith('{') && textString.trim().endsWith('}')) {
+                const msg = JSON.parse(textString);
+
                 if (msg.type === 'HELLO') {
-                    get().addLog("Receiver is ready (HELLO received).");
+                    isCommand = true;
+                    get().addLog("Receiver is ready.");
                     const file = get().selectedFile;
-                    if (file) {
-                        get().addLog("Sending metadata now...");
-                        sendMetadata(file); // Dosya bilgisini şimdi yolla!
-                    }
+                    if (file) sendMetadata(file);
                 }
 
                 else if (msg.type === 'METADATA') {
-                    isMetadata = true;
+                    isCommand = true;
                     set({ incomingMetadata: msg.payload }); 
-                    get().addLog(`📄 File offer received: ${msg.payload.name}`);
+                    get().addLog(`📄 Offer: ${msg.payload.name}`);
                 }
                 
                 else if (msg.type === 'STATUS') {
+                    isCommand = true;
                     if (msg.status === 'DOWNLOAD_STARTED') {
-                        get().addLog("Receiver accepted. Sending started...");
                         const file = get().selectedFile;
                         if (file) startSendingData(file, get, set);
                     }
+                    // YENİ: Reddedilme Durumu
                     else if (msg.status === 'DOWNLOAD_REJECTED') {
                         get().addLog("Receiver rejected the file.");
-                        set({ transferState: 'IDLE' });
+                        set({ transferState: 'REJECTED' }); // Göndericide durum güncellendi
                     }
                 }
-            } catch (e) {
-                console.error("JSON Parse Hatası:", e);
             }
+        } catch (error) {
+            get().addLog(`⚠️ Control message parse error: ${(error as Error).message}`);
         }
-        
-        // Binary veri kontrolü...
-        else if (!isMetadata && arrayBuffer instanceof ArrayBuffer) {
+
+        if (!isCommand) {
             if (get().transferState !== 'TRANSFERRING') return;
 
-            receiveFileUseCase.processChunk(arrayBuffer as ArrayBuffer, (progress) => {
+            receiveFileUseCase.processChunk(bufferData.buffer as ArrayBuffer, (progress) => {
                  set({ progress });
                  if (progress === 100) {
                      set({ transferState: 'COMPLETED', incomingMetadata: null });
-                     get().addLog("🎉 Transfer completed successfully!");
+                     get().addLog("🎉 Completed!");
                  }
             });
         }
@@ -228,3 +228,7 @@ function bindPeerEvents(targetId: string, get: GetState, set: SetState) {
         set({ connectionStatus: 'DISCONNECTED', senderLeft: true });
     });
 }
+
+
+
+
