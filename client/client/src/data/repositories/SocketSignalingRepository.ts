@@ -57,4 +57,12 @@ export class SocketSignalingRepository implements ISignalingRepository {
     disconnect(): void {
         this.socket.disconnect();
     }
+
+
+    onPeerDisconnected(callback: () => void): void {
+        this.socket.on('peer-disconnected', () => {
+            console.log("Karşı taraf bağlantıyı kopardı.");
+            callback();
+        });
+    }
 }

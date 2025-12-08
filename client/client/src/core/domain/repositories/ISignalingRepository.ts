@@ -12,5 +12,10 @@ export interface ISignalingRepository {
     onSignalReceived(callback: (senderId: string, signal: unknown) => void): void;
     
     // Temizlik
-    disconnect(): void;
+    disconnect(): void;   
+
+    onPeerDisconnected(callback: () => void): void; 
 }
+
+
+    

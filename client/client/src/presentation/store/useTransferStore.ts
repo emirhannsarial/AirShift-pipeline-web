@@ -81,6 +81,14 @@ export const useTransferStore = create<TransferState>((set, get) => ({
         signalingRepo.onSignalReceived((_, signal) => {
             peerRepo.signal(signal);
         });
+
+        signalingRepo.onPeerDisconnected(() => {
+            get().addLog("⚠️ Peer disconnected from the server.");
+            set({ connectionStatus: 'DISCONNECTED: Peer left' });
+            
+            // WebRTC'yi de kapatabiliriz
+            // peerRepo.destroy(); // Eğer böyle bir metod yazarsak
+        });
     },
 
     joinRoom: async (roomId) => {
@@ -94,6 +102,14 @@ export const useTransferStore = create<TransferState>((set, get) => ({
         signalingRepo.onSignalReceived((senderId, signal) => {
             set({ remotePeerId: senderId });
             peerRepo.signal(signal);
+        });
+
+        signalingRepo.onPeerDisconnected(() => {
+            get().addLog("⚠️ Peer disconnected from the server.");
+            set({ connectionStatus: 'DISCONNECTED: Peer left' });
+            
+            // WebRTC'yi de kapatabiliriz
+            // peerRepo.destroy(); // Eğer böyle bir metod yazarsak
         });
     }
 }));

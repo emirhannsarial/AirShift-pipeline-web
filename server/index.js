@@ -36,7 +36,15 @@ io.on('connection', (socket) => {
         socket.to(roomId).emit('user-connected', userId);
     });
 
-    // İstemci koptuğunda
+    // Bağlantı kopunca (Sekme kapanınca)
+    socket.on('disconnecting', () => {
+        const rooms = socket.rooms;
+        // Kullanıcının bulunduğu tüm odalara haber ver
+        rooms.forEach((roomId) => {
+            socket.to(roomId).emit('peer-disconnected', socket.id);
+        });
+    });
+
     socket.on('disconnect', () => {
         console.log('Biri ayrıldı:', socket.id);
     });

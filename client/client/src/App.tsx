@@ -3,8 +3,23 @@ import { HomePage } from './presentation/pages/HomePage';
 import { DownloadPage } from './presentation/pages/DownloadPage';
 import { AboutPage } from './presentation/pages/AboutPage'; // Yeni
 import { PrivacyPage } from './presentation/pages/PrivacyPage'; // Yeni
+import { useEffect } from 'react';
 
 function App() {
+
+  
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Sadece transfer devam ediyorsa uyar
+      // (Burada store'dan duruma bakabilirsin ama basitçe her zaman soralım)
+      e.preventDefault();
+      e.returnValue = ''; // Chrome için gerekli
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   return (
     <BrowserRouter>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
