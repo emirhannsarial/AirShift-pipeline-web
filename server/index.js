@@ -13,7 +13,8 @@ const server = http.createServer(app);
 const ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
-    "https://pipeline-web.vercel.app" // Kendi Vercel adresini buraya ekleyeceksin
+    "https://pipeline-server.onrender.com/", // Kendi Vercel adresini buraya ekleyeceksin
+    "https://pipeline-web-*.vercel.app" // Vercel'in preview linkleri için (opsiyonel)
 ];
 
 const io = new Server(server, {
