@@ -1,4 +1,4 @@
-import '../App.css'; // Stil dosyamızı kullandığından emin ol
+import '../../App.css';
 
 export const AboutPage = () => (
   <div className="container" style={{ paddingBottom: '100px' }}>
