@@ -18,17 +18,17 @@ app.get('/', (req, res) => {
 const ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
-    "https://pipeline-server.onrender.com/", // Kendi Vercel adresini buraya ekleyeceksin
-    "https://pipeline-web-*.vercel.app" // Vercel'in preview linkleri için (opsiyonel)
+    "https://pipeline-web-coral.vercel.app" // Bunu ekledik
 ];
 
 const io = new Server(server, {
     cors: {
         origin: (origin, callback) => {
-            // Postman veya Mobile App gibi originsiz isteklere izin ver (geliştirme aşamasında)
+            // Eğer origin yoksa (Postman vs) veya listedeyse izin ver
             if (!origin || ALLOWED_ORIGINS.includes(origin)) {
                 callback(null, true);
             } else {
+                console.log("Engellenen Origin:", origin); // Log ekleyelim ki hatayı görelim
                 callback(new Error('Not allowed by CORS'));
             }
         },
