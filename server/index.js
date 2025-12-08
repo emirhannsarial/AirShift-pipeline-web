@@ -9,6 +9,11 @@ app.use(cors());
 
 const server = http.createServer(app);
 
+// YENİ EKLENECEK KISIM: Ana sayfaya girince mesaj göster
+app.get('/', (req, res) => {
+    res.send('🚀 PipeLine Server is Running Successfully!');
+});
+
 // İzin verilen adresler (Localhost ve ilerideki Vercel adresi)
 const ALLOWED_ORIGINS = [
     "http://localhost:5173",
