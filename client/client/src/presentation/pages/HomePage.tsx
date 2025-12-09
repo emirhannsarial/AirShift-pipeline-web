@@ -141,8 +141,18 @@ export const HomePage = () => {
           📢 Ad Space (160x600)
         </div>
       </div>
+      
+    {/* SEO CONTENT SECTION */}
+    <section style={{ maxWidth: '800px', margin: '60px auto', textAlign: 'left', color: '#888' }}>
+        <h2>Why PipeLine.web is the Best WeTransfer Alternative?</h2>
+        <p>Looking for a <strong>free WeTransfer alternative</strong>? PipeLine.web allows you to <strong>send large files</strong> without any size limits. Unlike traditional cloud services, we use WebRTC for direct <strong>P2P file transfer</strong>.</p>
+        
+        <h3>How to send unlimited files for free?</h3>
+        <p> simply select your file, create a link, and share it. Our <strong>serverless file sharing</strong> technology ensures your data remains private and secure.</p>
+    </section>
 
-      {showToast && <div className="toast">✅ Link copied to clipboard!</div>}
+    {showToast && <div className="toast">✅ Link copied to clipboard!</div>}
     </div>
   );
+  
 };
