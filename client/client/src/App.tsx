@@ -4,6 +4,7 @@ import { DownloadPage } from './presentation/pages/DownloadPage';
 import { AboutPage } from './presentation/pages/AboutPage';
 import { PrivacyPage } from './presentation/pages/PrivacyPage';
 import { TermsPage } from './presentation/pages/TermsPage';
+import { CookieBanner } from './presentation/components/CookieBanner';
 function App() {
   return (
     <BrowserRouter>
@@ -65,7 +66,8 @@ function App() {
             
           </div>
         </footer>
-
+        {/* Cookie Banner */}
+        <CookieBanner />
       </div>
     </BrowserRouter>
   );

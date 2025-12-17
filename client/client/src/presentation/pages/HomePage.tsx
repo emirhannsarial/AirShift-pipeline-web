@@ -13,13 +13,14 @@ export const HomePage = () => {
     selectFile, 
     transferState, 
     resetTransfer, 
-    peerLeft, // DÜZELTME: senderLeft yerine peerLeft
-    logs 
+    peerLeft,
   } = useTransferStore();
   
   const [showToast, setShowToast] = useState(false);
-  const [showLogs, setShowLogs] = useState(false);
   
+  // Akordiyon State'i (Hangi başlık açık?)
+  const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
+
   const shareLink = roomId ? `${window.location.origin}/download/${roomId}` : '';
 
   const copyToClipboard = () => {
@@ -28,7 +29,35 @@ export const HomePage = () => {
     setTimeout(() => setShowToast(false), 3000);
   };
 
+  const toggleAccordion = (index: number) => {
+    setActiveAccordion(activeAccordion === index ? null : index);
+  };
+
   const isConnected = connectionStatus.includes('CONNECTED') || connectionStatus.includes('BAĞLANDI');
+
+  // SEO İçerik Verisi
+  const seoContent = [
+    {
+      title: "Why Choose AirShift for File Transfer?",
+      content: "In the digital age, sharing large files shouldn't be complicated. AirShift offers a revolutionary approach to file sharing by utilizing WebRTC technology. Unlike traditional services like WeTransfer or Google Drive, we do not store your files on any server. It's strictly peer-to-peer."
+    },
+    {
+      title: "🚀 Is it Truly Unlimited?",
+      content: "Yes. Most email services limit attachments to 25MB. Cloud services often require you to pay for extra storage. With AirShift, the only limit is your device's storage. Whether you are sending a 100GB video project or a massive database backup, our P2P pipeline handles it with ease."
+    },
+    {
+      title: "🔒 How Secure is End-to-End Encryption?",
+      content: "Your privacy is our priority. Since your files are streamed directly from the sender to the receiver, there is no 'middleman'. We cannot see your files, and hackers cannot intercept them from a central server because there isn't one. All data is encrypted using DTLS (Datagram Transport Layer Security) standards."
+    },
+    {
+      title: "⚡ Why is P2P Faster?",
+      content: "Why wait for a file to upload to a server, only to wait again for it to download? AirShift streams data in real-time. If you are on the same Wi-Fi network, transfers happen at local network speeds (LAN), which can be up to 10x faster than cloud uploads."
+    },
+    {
+      title: "📱 Do I Need to Register?",
+      content: "No. We believe in simplicity. You don't need to create an account, verify an email, or remember another password. Just select a file, copy the secure link, and share it. It works on Windows, macOS, Android, and iOS directly from the browser."
+    }
+  ];
 
   return (
     <div className="container">
@@ -44,7 +73,7 @@ export const HomePage = () => {
             </p>
           </div>
 
-          {/* ALICI KAÇTI MODALI (peerLeft kullanıldı) */}
+          {/* ALICI KAÇTI MODALI */}
           {peerLeft && (
             <AlertModal 
               title="Receiver Disconnected" 
@@ -55,6 +84,7 @@ export const HomePage = () => {
             />
           )}
 
+          {/* DURUM 1: Dosya Seç */}
           {!roomId && !selectedFile && (
             <div className="card upload-zone">
               <label style={{ cursor: 'pointer', display: 'block', padding: '40px' }}>
@@ -70,6 +100,7 @@ export const HomePage = () => {
             </div>
           )}
 
+          {/* DURUM 2: Link Oluştur */}
           {!roomId && selectedFile && (
             <div className="card">
               <div style={{ fontSize: '60px', marginBottom: '15px' }}>📄</div>
@@ -89,6 +120,7 @@ export const HomePage = () => {
             </div>
           )}
 
+          {/* DURUM 3: Paylaş ve Aktar */}
           {roomId && (
             <div className="card">
               <div className={`status-badge ${isConnected ? 'status-connected' : 'status-waiting'}`}>
@@ -149,30 +181,55 @@ export const HomePage = () => {
                   )}
                 </div>
               )}
-
-              {/* LOG PANELİ */}
-              <div style={{ marginTop: '40px', borderTop: '1px solid #333', paddingTop: '20px' }}>
-                  <button 
-                      onClick={() => setShowLogs(!showLogs)}
-                      style={{ background: 'transparent', border: 'none', color: '#666', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', margin: '0 auto' }}
-                  >
-                      {showLogs ? 'Hide Activity' : 'Show Activity'} 
-                      <span style={{ fontSize: '0.8rem' }}>{showLogs ? '▲' : '▼'}</span>
-                  </button>
-
-                  {showLogs && (
-                      <div style={{ marginTop: '15px', textAlign: 'left', background: '#1a1a1a', borderRadius: '12px', padding: '15px', maxHeight: '200px', overflowY: 'auto', fontSize: '0.85rem' }}>
-                          {logs.map((log, i) => (
-                              <div key={i} style={{ borderBottom: '1px solid #222', paddingBottom: '5px', marginBottom: '5px' }}>
-                                  &gt; {log}
-                              </div>
-                          ))}
-                      </div>
-                  )}
-              </div>
-
             </div>
           )}
+
+          {/* --- SEO ACCORDION SECTION (MODERN) --- */}
+          <div style={{ marginTop: '60px', textAlign: 'left' }}>
+            <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#fff' }}>Frequently Asked Questions</h2>
+            
+            {seoContent.map((item, index) => (
+              <div 
+                key={index} 
+                style={{ 
+                  background: '#1a1a1a', 
+                  marginBottom: '10px', 
+                  borderRadius: '8px', 
+                  border: '1px solid #333',
+                  overflow: 'hidden'
+                }}
+              >
+                <button 
+                  onClick={() => toggleAccordion(index)}
+                  style={{ 
+                    width: '100%', 
+                    padding: '15px 20px', 
+                    background: 'transparent', 
+                    border: 'none', 
+                    color: '#fff', 
+                    textAlign: 'left', 
+                    fontSize: '1rem', 
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {item.title}
+                  <span style={{ color: '#646cff' }}>{activeAccordion === index ? '−' : '+'}</span>
+                </button>
+                
+                {activeAccordion === index && (
+                  <div style={{ padding: '0 20px 20px 20px', color: '#aaa', lineHeight: '1.6' }}>
+                    {item.content}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* ------------------------------------- */}
+
         </div>
 
         <div className="ad-sidebar">📢 Ad Space (160x600)</div>

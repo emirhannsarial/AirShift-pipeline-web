@@ -1,13 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
-    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-      <url>
-        <loc>https://pipeline-web-coral.vercel.app/</loc>
-        <lastmod>2025-01-01</lastmod>
-        <changefreq>daily</changefreq>
-        <priority>1.0</priority>
-      </url>
-      <url>
-        <loc>https://pipeline-web-coral.vercel.app/about</loc>
-        <priority>0.8</priority>
-      </url>
-    </urlset>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Ana Sayfa -->
+  <url>
+    <loc>https://www.airshift.tech/</loc>
+    <lastmod>2025-12-08</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- Hakkında -->
+  <url>
+    <loc>https://www.airshift.tech/about</loc>
+    <lastmod>2025-12-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Gizlilik Politikası (AdSense İçin Önemli) -->
+  <url>
+    <loc>https://www.airshift.tech/privacy</loc>
+    <lastmod>2025-12-08</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Kullanım Koşulları (AdSense İçin Önemli) -->
+  <url>
+    <loc>https://www.airshift.tech/terms</loc>
+    <lastmod>2025-12-08</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>
