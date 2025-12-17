@@ -62,7 +62,7 @@ function App() {
             <Link to="/privacy" style={{ color: '#555', textDecoration: 'none' }}>Privacy Policy</Link>
             <Link to="/terms" style={{ color: '#555', textDecoration: 'none' }}>Terms of Service</Link>
             <Link to="/about" style={{ color: '#555', textDecoration: 'none' }}>About</Link>
-            <a href="https://github.com/emirhannsarial/pipeline-web" target="_blank" style={{ color: '#555', textDecoration: 'none' }}>GitHub</a>
+            
           </div>
         </footer>
 
